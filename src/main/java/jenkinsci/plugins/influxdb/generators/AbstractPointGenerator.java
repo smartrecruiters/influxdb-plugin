@@ -47,6 +47,7 @@ public abstract class AbstractPointGenerator implements PointGenerator {
             builder.tag(CUSTOM_PREFIX, this.replaceDashWithUnderscore ? measurementName(customPrefix) : customPrefix);
 
         builder.tag(PROJECT_NAME, projectTagName);
+        builder.tag(PROJECT_PATH, build.getParent().getRelativeNameFrom(Jenkins.getInstance()));
 
         return builder;
 

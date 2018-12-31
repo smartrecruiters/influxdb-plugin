@@ -127,6 +127,15 @@ public class JenkinsBasePointGenerator extends AbstractPointGenerator {
             point.tag(tagMap);
         }
 
+        try {
+            String serviceId = build.getEnvironment(listener).get("SERVICE_ID");
+            if (serviceId != null) {
+                point.tag("service_id", serviceId);
+            }
+        } catch (InterruptedException | IOException e) {
+            // handle
+        }
+
         return new Point[] {point.build()};
     }
 
