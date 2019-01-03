@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import hudson.EnvVars;
+import hudson.model.Cause;
 import hudson.model.Executor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -127,16 +128,35 @@ public class JenkinsBasePointGenerator extends AbstractPointGenerator {
             point.tag(tagMap);
         }
 
-        try {
-            String serviceId = build.getEnvironment(listener).get("SERVICE_ID");
-            if (serviceId != null) {
-                point.tag("service_id", serviceId);
-            }
-        } catch (InterruptedException | IOException e) {
-            // handle
-        }
+        setServiceIdTag(point);
 
-        return new Point[] {point.build()};
+        return new Point[]{point.build()};
+    }
+
+    private void setServiceIdTag(Point.Builder point) {
+        try {
+            if (setServiceTagFromRun(build, point)) {
+                return;
+            }
+            Cause.UpstreamCause cause = build.getCause(Cause.UpstreamCause.class);
+            while (cause != null) {
+                if (cause.getUpstreamRun() != null && setServiceTagFromRun(cause.getUpstreamRun(), point)) {
+                    return;
+                }
+                cause = cause.getUpstreamRun().getCause(Cause.UpstreamCause.class);
+            }
+        } catch (Exception e) {
+            listener.getLogger().println("Could not retrieve service_id");
+        }
+    }
+
+    private boolean setServiceTagFromRun(Run<?, ?> build, Point.Builder point) throws IOException, InterruptedException {
+        String serviceId = build.getEnvironment(listener).get("SERVICE_ID");
+        if (serviceId != null) {
+            point.tag("service_id", serviceId);
+            return true;
+        }
+        return false;
     }
 
     private String getBuildAgentName() {
